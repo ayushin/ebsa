@@ -120,6 +120,11 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+# Pathnames
+PROJECT_APP_PATH = os.path.dirname(os.path.abspath(__file__))
+PROJECT_APP = os.path.basename(PROJECT_APP_PATH)
+PROJECT_ROOT = BASE_DIR = os.path.dirname(PROJECT_APP_PATH)
 
 # EBSA preferences
 EBSA_TMP_DIR='/tmp'
+EBSA_CSV_DIR=os.path.join(PROJECT_ROOT, "csv_data")

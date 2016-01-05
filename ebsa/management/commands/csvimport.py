@@ -4,13 +4,15 @@ from ebsa.connector import load_connector
 from datetime import datetime
 
 class Command(BaseCommand):
-    help = 'Imports transactions of the specified account via WEB'
+    help = 'Imports transactions from csv file'
 
     def add_arguments(self, parser):
+        parser.add_argument('filename', nargs=1, type=str)
         parser.add_argument('bank', nargs=1, type=str)
         parser.add_argument('accounts', nargs='+', type=str)
 
     def handle(self, *args, **options):
+        file_name = options['filename'][0]
         bank_name = options['bank'][0]
         try:
             bank = Bank.objects.get(name=bank_name)
@@ -19,7 +21,7 @@ class Command(BaseCommand):
 
         accounts = []
         if(options['accounts'][0] == 'all'):
-            accounts = Account.objects.filter(bank=bank.id).filter(type='0')
+            accounts = [] # Account.objects.filter(bank=bank.id).filter(type='0')
         else:
             for account_name in options['accounts']:
                 try:
@@ -30,6 +32,6 @@ class Command(BaseCommand):
 
         # Do the job
         connector = load_connector(bank)
-        connector.webimport(accounts, datefrom = datetime.strptime('2015-01-01', '%Y-%m-%d'))
+        connector.csvimport(file_name, bank, accounts)
 
 #    self.stdout.write(self.style.SUCCESS('Successfully closed poll "%s"' % poll_id))

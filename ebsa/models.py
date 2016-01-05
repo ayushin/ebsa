@@ -1,4 +1,7 @@
 from __future__ import unicode_literals
+from django.db.utils import IntegrityError
+
+from hashlib import md5
 
 from django.db import models
 
@@ -30,6 +33,9 @@ class Account(models.Model):
     def __str__(self):
         return self.name
 
+    def latest_transaction(self):
+        return Transaction.objects.filter(account=self.id).latest('date')
+
 class Transaction(models.Model):
     # Date transaction was posted to account
     date = models.DateField()
@@ -51,7 +57,7 @@ class Transaction(models.Model):
 
     # Reference number that uniquely identifies the transaction. Can be used in
     # addition to or instead of a check_no
-    refnum = models.CharField(max_length=64)
+    refnum = models.CharField(max_length=64, unique=True)
 
     # Transaction type, must be one of TRANSACTION_TYPES
     TRANSACTION_TYPES = (
@@ -78,6 +84,17 @@ class Transaction(models.Model):
 
     account = models.ForeignKey(Account)
 
+    def generate_refnum(self):
+        m = md5()
+        m.update(str(self.date))
+        m.update(str(self.amount))
+        m.update(self.payee.encode('utf-8'))
+        m.update(self.memo.encode('utf-8'))
+        m.update(self.trntype)
+        m.update(str(self.check_no))
+
+        return m.hexdigest()
+
     def __str__(self):
         return """
         ID: %s, date: %s, amount: %s, payee: %s
@@ -85,3 +102,16 @@ class Transaction(models.Model):
         check no.: %s
         """ % (self.id, self.date, self.amount, self.payee, self.memo,
                self.check_no)
+
+    def __unicode__(self):
+        return u'%s' % self.__str__()
+
+    def save_safe(self):
+        # Check if this transaction is already in the database?
+        try:
+            self.save()
+        except IntegrityError as e:
+            if(e.message == 'UNIQUE constraint failed: ebsa_transaction.refnum'):
+                print "Duplicate transaction: %s [ %s ] %s  -- ignored" % (self.date, self.amount, self.payee)
+            else:
+                raise IntegrityError(e)

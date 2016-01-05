@@ -1,6 +1,7 @@
 from settings import *
 from os import unlink,rmdir,listdir,getcwd
 from tempfile import mkdtemp
+from django.db.utils import IntegrityError
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -50,8 +51,30 @@ class Connector:
     def webimport(self):
         pass
 
-    def csvimport(self):
-        pass
+    def webimport(self, accounts, datefrom = None):
+
+        # Log in...
+        self.weblogin()
+
+        # Go through every account...
+        for account in accounts:
+            if not datefrom:
+                datefrom = account.latest_transaction().date
+
+            if account.type == 'C':
+                self.webimport_creditcard(account, datefrom)
+
+            if account.type == '0':
+                self.webimport_checking(account, datefrom)
+
+        # Log out...
+        self.close_browser()
+
+    def download_ready(self):
+        if len(listdir(self.download_dir)) != 0:
+            return False
+        return True
+
 
 #    def __del__(self):
 #        self.close_browser()
