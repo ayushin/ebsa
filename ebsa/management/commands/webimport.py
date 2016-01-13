@@ -32,4 +32,4 @@ class Command(BaseCommand):
         connector = load_connector(bank)
         connector.webimport(accounts, datefrom = datetime.strptime('2015-01-01', '%Y-%m-%d'))
 
-#    self.stdout.write(self.style.SUCCESS('Successfully closed poll "%s"' % poll_id))
+        self.stdout.write(self.style.SUCCESS('Import completed'))

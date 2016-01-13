@@ -1,0 +1,29 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html lang="en">
+<head>
+    <title>{% if account %} Account {{ account|escape }} Statement {% else %}Account Statement Query{% endif %}</title>
+</head>
+<body>
+  <h1>Account</h1>
+  <form action="." method="GET">
+    <label for="account">Search: </label>
+    <input type="text" name="account" value="{{ account|escape }}">
+    <input type="submit" value="Search">
+</form>
+  {% if account %}
+    <h2>Opening balanance: {{ start_saldo }}</h2>
+    <h2>Statement for "{{ account|escape }}":</h2>
+    {% if transactions %}
+      <ul>
+      {% for tr in transactions %}
+        <li>{{ tr|escape }}</l1>
+            {% endfor %}
+      </ul>
+    {% else %}
+      <p>No books found</p>
+    {% endif %}
+      <h2>Closing balanance: {{ end_saldo }}</h2>
+
+  {% endif %}
+</body>
+</html>

@@ -97,11 +97,10 @@ class Transaction(models.Model):
 
     def __str__(self):
         return """
-        ID: %s, date: %s, amount: %s, payee: %s
-        memo: %s
-        check no.: %s
-        """ % (self.id, self.date, self.amount, self.payee, self.memo,
-               self.check_no)
+        ID: "%s" %s Date: %s Amount: %s Refnum "%s" Check No: "%s"
+            Payee: "%s" Memo: "%s"
+        """ % (self.id, dict(self.TRANSACTION_TYPES)[self.trntype], self.date, self.amount,self.refnum,self.check_no,
+               self.payee, self.memo)
 
     def __unicode__(self):
         return u'%s' % self.__str__()
