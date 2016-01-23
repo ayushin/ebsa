@@ -20,9 +20,9 @@ import ebsa.views
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^statement/(?P<account>[a-zA-Z0-9]+)/(?P<datefrom>\d{2,4}-\d{1,2}-\d{1,2})/(?P<dateto>\d{2,4}-\d{1,2}-\d{1,2})', ebsa.views.account_statement),
-    url(r'^statement/(?P<account>[a-zA-Z0-9]+)/(?P<datefrom>\d{2,4}-\d{1,2}-\d{1,2})', ebsa.views.account_statement),
-    url(r'^statement/(?P<account>[a-zA-Z0-9]+)', ebsa.views.account_statement),
+    url(r'^statement/(?P<account_number>[a-zA-Z0-9]+)/(?P<datefrom>\d{2,4}-\d{1,2}-\d{1,2})/(?P<dateto>\d{2,4}-\d{1,2}-\d{1,2})', ebsa.views.account_statement),
+    url(r'^statement/(?P<account_number>[a-zA-Z0-9]+)/(?P<datefrom>\d{2,4}-\d{1,2}-\d{1,2})', ebsa.views.account_statement),
+    url(r'^statement/(?P<account_number>[a-zA-Z0-9]+)', ebsa.views.account_statement),
     url(r'^statement/', ebsa.views.account_list),
     url(r'^ofx', ebsa.views.ofx_connect),
 ]

@@ -1,0 +1,14 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html lang="en">
+<head>
+    <title>List of all available accounts</title>
+</head>
+<body>
+<h1> List of available accounts</h1>
+<ul>
+  {% for account in accounts %}
+  <li>{{account.id }} {{ account.bank.name }} <a href="/statement/{{ account.number }}">{{ account.name}}</a>  {{ account.opening_balance }} {{ account.eod_balance }} </l1>
+  {% endfor %}
+</ul>
+</body>
+</html>

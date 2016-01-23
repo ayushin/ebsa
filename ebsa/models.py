@@ -1,9 +1,13 @@
 from __future__ import unicode_literals
+
 from django.db.utils import IntegrityError
 
 from hashlib import md5
 
 from django.db import models
+from django.db.models import Sum
+
+from datetime import datetime
 
 # Create your models here.
 class Bank(models.Model):
@@ -19,9 +23,9 @@ class Bank(models.Model):
 
 class Account(models.Model):
     ACCOUNT_TYPES = (
-        ('0', 'Checking'),
-        ('S', 'Savings'),
-        ('C', 'Credit Card'),
+        ('0', 'CHECKING'),
+        ('S', 'SAVINGS'),
+        ('C', 'CCARD'),
     )
     type = models.CharField(max_length=1, choices=ACCOUNT_TYPES)
 
@@ -29,12 +33,26 @@ class Account(models.Model):
     name = models.CharField(max_length=32)
     number = models.CharField(max_length=64)
     bank = models.ForeignKey(Bank)
+    opening_balance = models.FloatField(default=0)
 
     def __str__(self):
         return self.name
 
     def latest_transaction(self):
         return Transaction.objects.filter(account=self.id).latest('date')
+
+    def bod_balance(self, date = None):
+        if not date:
+            date = datetime.now()
+        balance = Transaction.objects.filter(account=self.id).filter(date__lt=date.strftime('%Y-%m-%d')).aggregate(Sum('amount'))['amount__sum'] or 0
+        return self.opening_balance + balance
+
+    def eod_balance(self, date = None):
+        if not date:
+            date = datetime.now()
+        balance = Transaction.objects.filter(account=self.id).filter(date__lte=date.strftime('%Y-%m-%d')).aggregate(Sum('amount'))['amount__sum'] or 0
+        return self.opening_balance + balance
+
 
 class Transaction(models.Model):
     # Date transaction was posted to account
@@ -111,6 +129,6 @@ class Transaction(models.Model):
             self.save()
         except IntegrityError as e:
             if(e.message == 'UNIQUE constraint failed: ebsa_transaction.refnum'):
-                print "Duplicate transaction: %s [ %s ] %s  -- ignored" % (self.date, self.amount, self.payee)
+                print "Duplicate transaction: %s [ %s ] %s  -- ignored (%s / %s)" % (self.date, self.amount, self.payee, self.refnum, self.check_no)
             else:
                 raise IntegrityError(e)

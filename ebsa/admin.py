@@ -15,5 +15,5 @@ class BankAdmin(admin.ModelAdmin):
 
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
-    list_display = ('name', 'bank', 'type', 'number', 'currency', )
+    list_display = ('name', 'bank', 'type', 'number', 'currency','opening_balance','eod_balance' )
     list_filter = ('bank', 'currency')

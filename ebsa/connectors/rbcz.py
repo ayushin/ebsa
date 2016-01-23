@@ -15,7 +15,7 @@ import csv
 
 
 class RaiffeisenCZConnector(Connector):
-	login_url = 'https://klient1.rb.cz/ebts/version_02/eng/banka3.html'
+    login_url = 'https://klient1.rb.cz/ebts/version_02/eng/banka3.html'
 #    download_url = 'https://bankieren.mijn.ing.nl/particulier/overzichten/download/index'
 #    creditcard_url = 'https://bankieren.mijn.ing.nl/particulier/creditcard/saldo-overzicht/index'
 
@@ -94,66 +94,73 @@ class RaiffeisenCZConnector(Connector):
     #
     # If accounts = None create the accounts for this bank from the statement file
     #
-    def csvimport(self, filename, bank, accounts = []):
+    def csvimport(self, filename, bank, accounts):
         # Check the header...
         header=['DATE','TIME','NOTE','ACCOUNT NAME','ACCOUNT NUMBER',
                 'DATE DEDUCTED','VALUE','TYPE','TRANSACTION CODE','VARIABLE SYMBOL','CONSTANT SYMBOL',
                 'SPECIFIC SYMBOL','AMOUNT','CHARGE','EXCHANGE','MESSAGE']
 
-        accounts_numbers = []
-
-        if len(accounts) > 0:
-            for account in accounts:
-                accounts_numbers.append(account.number)
-
+        account = accounts[0]
 
         # Open the file
         print "Opening %s" % filename
 
         with open(filename, 'r') as csv_file:
             # Open the file
-            reader = csv.reader(csv_file, delimiter=',', quotechar='"')
+            reader = csv.DictReader(csv_file, fieldnames=header, delimiter=';', quotechar='"')
 
             # Check the header
             h = next(reader)
-            if h != header:
-                raise ValueError('CSV file doesnt seem to be in the correct format')
+            for key in h:
+                if h[key] != key:
+                    raise ValueError('CSV file doesnt seem to be in the correct format')
 
+            lineno = 1
             for row in reader:
-                # Do we want to import this account?
-                if not row[2] in accounts_numbers:
-                    if len(accounts) > 0:
-                        print "Ignoring transaction for account number %s" % row[2]
-                        next
-                    else:
-                        print 'Found account %s for bank %s' % (row[2], bank.name)
-                        accounts_numbers.append(row[2])
-
-                # Get the account or stop here with an exception...
-                account = Account.objects.get(number = row[2])
-
                 # Create a new transaction...
                 line = Transaction()
                 line.account = account
 
                 # Find the date...
-                line.date = line.date_user = datetime.strptime(row[0],'%Y%m%d')
+                line.date = line.date_user = datetime.strptime(row['DATE'],'%d.%m.%Y')
     
 
                 # Determine the amount...
-                amount = float(row[6].replace('.','').replace(',','.'))
-                if row[5] == 'Af':
-                    line.trntype = '-'
-                    line.amount = -amount
-                elif row[5] == 'Bij':
+                amount = row['AMOUNT'] or row['CHARGE'] or row['MESSAGE']
+                line.amount = float(amount.replace(' ','').replace(',','.'))
+                if line.amount > 0:
                     line.trntype = '+'
-                    line.amount = amount
+                elif line.amount < 0:
+                    line.trntype = '-'
                 else:
-                    raise ValueError('No sign for transaction')
+                    raise ValueError('No sign for transaction, zero transactions are not supported')
 
 
-                line.memo = smart_text(row[8] + '[' + row[1] + ']')
-                line.payee = smart_text(row[1])
+                line.memo = smart_text(row['NOTE'])
+                if row['ACCOUNT NAME']:
+                    line.memo += smart_text('[' + row['ACCOUNT NAME'] + ']')
+
+                line.payee = smart_text(row['ACCOUNT NUMBER'])
+                line.check_no = row['TRANSACTION CODE']
+                lineno += 1
                 line.refnum = line.generate_refnum()
 
                 line.save_safe()
+
+                # Do we have CHARGE and or MESSAGE?
+                charges = 0
+                if row['AMOUNT']:
+                    for key in ('CHARGE', 'MESSAGE'):
+                        if row[key]:
+                            charges += float(row[key].replace(' ','').replace(',','.'))
+
+                if charges != 0:
+                    charge_line = Transaction()
+                    charge_line.account = account
+                    charge_line.date = charge_line.date_user = line.date
+                    charge_line.amount = charges
+                    charge_line.trntype = 'S'
+                    charge_line.memo = 'Bank charges for transaction ' + line.check_no
+                    charge_line.payee = 'Raiffeisen Bank'
+                    charge_line.refnum = charge_line.generate_refnum()
+                    charge_line.save_safe()

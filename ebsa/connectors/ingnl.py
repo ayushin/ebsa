@@ -118,6 +118,8 @@ class IngNLConnector(Connector):
         elem = self.driver.find_element_by_xpath("//button[text()='Download']")
         elem.click()
 
+        
+
     #
     #
     # Import downloaded CSV file

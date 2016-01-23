@@ -6,6 +6,7 @@ from ebsa.models import Bank, Account, Transaction
 from datetime import datetime, date, timedelta
 
 from selenium.webdriver.support.ui import Select, WebDriverWait
+from selenium.common.exceptions import NoSuchElementException
 
 
 class ICSConnector(Connector):
@@ -40,7 +41,7 @@ class ICSConnector(Connector):
         for element in self.driver.find_elements_by_class_name('statement-header'):
 
             if not element.is_displayed():
-                raise ValueError('Reached the last statement on the page')
+                self.driver.find_element_by_class_name('show-more').click()
 
             while not 'expanded' in element.get_attribute('class'):
                 element.click()
@@ -53,56 +54,71 @@ class ICSConnector(Connector):
                 year = str(date.today().year)
             else:
                 year = str(id[:4])
-            tr_xpath = '//tr[@class="transaction-row statement-' + id + '"]'
 
+            line_number = 1
+            for tr_xpath in ('//tr[@class="transaction-row statement-' + id + '"]', '//tr[@class="transaction-row transaction-payment statement-' + id + '"]'):
+                for tr in self.driver.find_elements_by_xpath(tr_xpath):
 
-            for tr in self.driver.find_elements_by_xpath(tr_xpath):
-                tr_date = tr.find_element_by_class_name('col1').text.encode()
+                    elem = None
+                    try:
+                        elem = tr.find_element_by_class_name('col1')
+                    except NoSuchElementException:
+                        elem = None
 
-                # Do not import transactions without date
-                if tr_date == '':
-                    next
+                    # No transactions this month?
+                    if not elem:
+                        break
 
-                line = Transaction()
-                line.account = account
+                    tr_date = elem.text.encode()
 
-                tr_date = str.replace(tr_date, 'dec', '12')
-                tr_date = str.replace(tr_date, 'nov', '11')
-                tr_date = str.replace(tr_date, 'okt', '10')
-                tr_date = str.replace(tr_date, 'sep', '09')
-                tr_date = str.replace(tr_date, 'aug', '08')
-                tr_date = str.replace(tr_date, 'jul', '07')
-                tr_date = str.replace(tr_date, 'jun', '06')
-                tr_date = str.replace(tr_date, 'mei', '05')
-                tr_date = str.replace(tr_date, 'apr', '04')
-                tr_date = str.replace(tr_date, 'mrt', '03')
-                tr_date = str.replace(tr_date, 'feb', '02')
-                tr_date = str.replace(tr_date, 'jan', '01')
+                    # Do not import transactions without date
+                    if tr_date == '':
+                        next
 
-                line.date_user = line.date = datetime.strptime(tr_date + ' ' + year, '%d %m %Y')
+                    line = Transaction()
+                    line.account = account
 
-                name = tr.find_element_by_class_name('col2').text
-                line.payee = smart_text(name)
+                    tr_date = str.replace(tr_date, 'dec', '12')
+                    tr_date = str.replace(tr_date, 'nov', '11')
+                    tr_date = str.replace(tr_date, 'okt', '10')
+                    tr_date = str.replace(tr_date, 'sep', '09')
+                    tr_date = str.replace(tr_date, 'aug', '08')
+                    tr_date = str.replace(tr_date, 'jul', '07')
+                    tr_date = str.replace(tr_date, 'jun', '06')
+                    tr_date = str.replace(tr_date, 'mei', '05')
+                    tr_date = str.replace(tr_date, 'apr', '04')
+                    tr_date = str.replace(tr_date, 'mrt', '03')
+                    tr_date = str.replace(tr_date, 'feb', '02')
+                    tr_date = str.replace(tr_date, 'jan', '01')
 
-                line.memo = smart_text(name + ' ' + tr.find_element_by_class_name('foreign').text)
+                    line.date_user = line.date = datetime.strptime(tr_date + ' ' + year, '%d %m %Y')
 
-                amount = float(tr.find_element_by_xpath("td/div/span[@class='amount']").text.replace('.','').replace(',','.'))
+                    name = tr.find_element_by_class_name('col2').text
+                    line.payee = smart_text(name)
 
-                sign = tr.find_element_by_xpath("td[not(@id) and not(@class)]/span").text
+                    line.memo = smart_text(name + ' ' + tr.find_element_by_class_name('foreign').text)
 
-                if sign == 'Af':
-                    line.trntype = '-'
-                    line.amount = -amount
-                elif sign == 'Bij':
-                    line.trntype = '+'
-                    line.amount = amount
-                else:
-                    raise ValueError('No sign for transaction')
+                    amount = float(tr.find_element_by_xpath("td/div/span[@class='amount']").text.replace('.','').replace(',','.'))
 
-                line.refnum = line.generate_refnum()
+                    sign = tr.find_element_by_xpath("td[not(@id) and not(@class)]/span").text
 
-                # Are we done?
-                if line.date < datefrom:
-                    break
+                    if sign == 'Af':
+                        line.trntype = '-'
+                        line.amount = -amount
+                    elif sign == 'Bij':
+                        line.trntype = '+'
+                        line.amount = amount
+                    else:
+                        raise ValueError('No sign for transaction')
 
-                line.save_safe()
+                    # We save the statement line number as check_no in order to create unique refnum
+                    line.check_no = line_number
+                    line_number += 1
+
+                    line.refnum = line.generate_refnum()
+
+                    # Are we done?
+                    if line.date < datefrom:
+                        return
+
+                    line.save_safe()

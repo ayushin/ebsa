@@ -6,4 +6,5 @@
 *.sqlite3
 .DS_Store
 csv_data/
+backups/
 OFX*

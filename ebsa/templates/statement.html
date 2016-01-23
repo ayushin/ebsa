@@ -10,9 +10,13 @@
     <input type="text" name="account" value="{{ account|escape }}">
     <input type="submit" value="Search">
 </form>
-  {% if account %}
+  {% if account_number %}
     <h2>Opening balanance: {{ start_saldo }}</h2>
-    <h2>Statement for "{{ account|escape }}":</h2>
+    <h2>Closing balanance: {{ end_saldo }}</h2>
+    {% for month in months %}
+      <a href="/statement/{{ account_number }}/2015-{{month}}-01/2015-{{month}}-31">{{month}}</a>
+    {% endfor %}
+    <h2>Statement for "{{ account_number |escape }}":</h2>
     {% if transactions %}
       <ul>
       {% for tr in transactions %}
@@ -22,7 +26,6 @@
     {% else %}
       <p>No books found</p>
     {% endif %}
-      <h2>Closing balanance: {{ end_saldo }}</h2>
 
   {% endif %}
 </body>

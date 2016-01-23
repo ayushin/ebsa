@@ -8,7 +8,8 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('bank', nargs=1, type=str)
-        parser.add_argument('accounts', nargs='+', type=str)
+        parser.add_argument('account', nargs='+', type=str)
+        parser.add_argument('--startdate', type=str, default='2015-01-01')
 
     def handle(self, *args, **options):
         bank_name = options['bank'][0]
@@ -18,10 +19,10 @@ class Command(BaseCommand):
             raise CommandError('Bank "%s" does not exist' % bank_name)
 
         accounts = []
-        if(options['accounts'][0] == 'all'):
+        if(options['account'][0] == 'all'):
             accounts = Account.objects.filter(bank=bank.id).filter(type='0')
         else:
-            for account_name in options['accounts']:
+            for account_name in options['account']:
                 try:
                     account = Account.objects.get(name=account_name)
                 except Account.DoesNotExist:
@@ -30,6 +31,6 @@ class Command(BaseCommand):
 
         # Do the job
         connector = load_connector(bank)
-        connector.webimport(accounts, datefrom = datetime.strptime('2015-01-01', '%Y-%m-%d'))
+        connector.webimport(accounts, datefrom = datetime.strptime(options['startdate'], '%Y-%m-%d'))
 
         self.stdout.write(self.style.SUCCESS('Import completed'))
