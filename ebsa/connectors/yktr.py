@@ -1,3 +1,5 @@
+# -*- coding: UTF-8 -*-
+
 from django.utils.encoding import smart_text
 
 from ebsa.connector import Connector
@@ -12,10 +14,11 @@ from selenium.webdriver.common.by import By
 
 
 import csv
+import re
 
 
-class RaiffeisenCZConnector(Connector):
-    login_url = 'https://klient1.rb.cz/ebts/version_02/eng/banka3.html'
+class YapiKrediTRConnector(Connector):
+    login_url = 'https://internetsube.yapikredi.com.tr/ngi/index.do?lang=en'
 #    download_url = 'https://bankieren.mijn.ing.nl/particulier/overzichten/download/index'
 #    creditcard_url = 'https://bankieren.mijn.ing.nl/particulier/creditcard/saldo-overzicht/index'
 
@@ -24,36 +27,22 @@ class RaiffeisenCZConnector(Connector):
     def weblogin(self):
         self.open_browser()
         self.driver.get(self.login_url)
-
-        # Get the main frame...
-        self.driver.switch_to.frame('Main')
+        assert u"Yapı Kredi" in self.driver.title
 
         # Wait for the username and type it in...
-        elem_xpath = "//input[@name='a_username' and @type='text']"
-        WebDriverWait(self.driver, 3).until(EC.visibility_of_element_located((By.XPATH, elem_xpath)))
-        elem = self.driver.find_element_by_xpath(elem_xpath)
+        elem = self.driver.find_element_by_id('userCodeTCKN')
         elem.send_keys(self.bank.username)
 
-        # Open the certification prompt box and accept it...
-        self.driver.find_element_by_name("b_authcode_Button").click()
-        WebDriverWait(self.driver, 3).until(EC.alert_is_present())
-        alert = self.driver.switch_to_alert()
-        alert.accept()
+        elem = self.driver.find_element_by_id('password')
+        elem.send_keys(self.bank.password)
+
+        self.driver.find_element_by_id('btnSubmit').click()
 
         # Get the auth code from the user and send it together with the 'pin'...
         auth_code = input("Please enter the auth code:\n")
-        elem = self.driver.find_element_by_name("a_userpassword")
+        elem = self.driver.find_element_by_id('otpPassword')
         elem.send_keys(auth_code)
-        elem = self.driver.find_element_by_name("Pin")
-        elem.send_keys(self.bank.password)
-
-        # Click OK to log in
-        self.driver.find_element_by_name("b_ok_Button").click()
-
-#        # Download all accounts on the first call...
-#        if not self.all_downloaded:
-#            self.download_all_accounts(datefrom)
-#            self.all_downloaded = True
+        self.driver.find_element_by_id('btnSubmit').click()
 
 
 #    def download_all_accounts (self, fromdate):
@@ -96,9 +85,7 @@ class RaiffeisenCZConnector(Connector):
     #
     def csvimport(self, filename, bank, accounts):
         # Check the header...
-        header=['DATE','TIME','NOTE','ACCOUNT NAME','ACCOUNT NUMBER',
-                'DATE DEDUCTED','VALUE','TYPE','TRANSACTION CODE','VARIABLE SYMBOL','CONSTANT SYMBOL',
-                'SPECIFIC SYMBOL','AMOUNT','CHARGE','EXCHANGE','MESSAGE']
+        header=['Date', 'Transaction', 'Channel', 'Description', 'Transaction Amount', 'Balance', 'Receipt']
 
         account = accounts[0]
 
@@ -107,7 +94,7 @@ class RaiffeisenCZConnector(Connector):
 
         with open(filename, 'r') as csv_file:
             # Open the file
-            reader = csv.DictReader(csv_file, fieldnames=header, delimiter=';', quotechar='"')
+            reader = csv.DictReader(csv_file, fieldnames=header, delimiter='\t', quotechar='"')
 
             # Check the header
             h = next(reader)
@@ -117,17 +104,20 @@ class RaiffeisenCZConnector(Connector):
 
             lineno = 1
             for row in reader:
+                # Skip investment transactions...
+                #  if row['Transaction'] == 'Investment Transactions':
+                #    continue
+
                 # Create a new transaction...
                 line = Transaction()
                 line.account = account
 
                 # Find the date...
-                line.date = line.date_user = datetime.strptime(row['DATE'],'%d.%m.%Y')
-    
+                line.date = line.date_user = datetime.strptime(row['Date'],'%d/%m/%Y')
 
                 # Determine the amount...
-                amount = row['AMOUNT'] or row['CHARGE'] or row['MESSAGE']
-                line.amount = float(amount.replace(' ','').replace(',','.'))
+                m = re.search('^(\-?)(\d*)\.?(\d*),(\d*) (TL|EUR)$', row['Transaction Amount'])
+                line.amount = float(m.group(1) + m.group(2) + m.group(3) + '.' + m.group(4))
                 if line.amount > 0:
                     line.trntype = '+'
                 elif line.amount < 0:
@@ -136,31 +126,10 @@ class RaiffeisenCZConnector(Connector):
                     raise ValueError('No sign for transaction, zero transactions are not supported')
 
 
-                line.memo = smart_text(row['NOTE'])
-                if row['ACCOUNT NAME']:
-                    line.memo += smart_text('[' + row['ACCOUNT NAME'] + ']')
-
-                line.payee = smart_text(row['ACCOUNT NUMBER'])
-                line.check_no = row['TRANSACTION CODE']
+                line.memo = smart_text(row['Description']) + ' [' + row['Channel'] + ']'
+                line.payee = smart_text(row['Description'])
+                line.check_no = lineno
                 lineno += 1
                 line.refnum = line.generate_refnum()
 
                 line.save_safe()
-
-                # Do we have CHARGE and or MESSAGE?
-                charges = 0
-                if row['AMOUNT']:
-                    for key in ('CHARGE', 'MESSAGE'):
-                        if row[key]:
-                            charges += float(row[key].replace(' ','').replace(',','.'))
-
-                if charges != 0:
-                    charge_line = Transaction()
-                    charge_line.account = account
-                    charge_line.date = charge_line.date_user = line.date
-                    charge_line.amount = charges
-                    charge_line.trntype = 'S'
-                    charge_line.memo = 'Bank charges for transaction ' + line.check_no
-                    charge_line.payee = 'Raiffeisen Bank'
-                    charge_line.refnum = charge_line.generate_refnum()
-                    charge_line.save_safe()

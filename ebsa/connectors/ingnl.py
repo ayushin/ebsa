@@ -118,7 +118,7 @@ class IngNLConnector(Connector):
         elem = self.driver.find_element_by_xpath("//button[text()='Download']")
         elem.click()
 
-        
+
 
     #
     #
@@ -156,7 +156,7 @@ class IngNLConnector(Connector):
                 if not row[2] in accounts_numbers:
                     if len(accounts) > 0:
                         print "Ignoring transaction for account number %s" % row[2]
-                        next
+                        continue
                     else:
                         print 'Found account %s for bank %s' % (row[2], bank.name)
                         accounts_numbers.append(row[2])

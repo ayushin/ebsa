@@ -89,9 +89,11 @@ def ofx_connect(request):
     if stmtrqs:
         template = 'ofx/stmtrs.ofx'
         for stmtrq in stmtrqs:
-            account = Account.objects.filter(number__exact=stmtrq.find('BANKACCTFROM/ACCTID').text).\
-                filter(bank__name__exact=stmtrq.find('BANKACCTFROM/BANKID').text).\
-                filter(type__exact=dict((y, x) for x, y in Account.ACCOUNT_TYPES)[stmtrq.find('BANKACCTFROM/ACCTTYPE').text]).distinct()[0]
+            account_type = dict((y, x) for x, y in Account.ACCOUNT_TYPES)[stmtrq.find('BANKACCTFROM/ACCTTYPE').text]
+            account =  Account.objects.filter(number__exact=stmtrq.find('BANKACCTFROM/ACCTID').text).\
+                filter(type__exact=account_type).distinct()[0]
+                # We used to check BANK ID too...
+                # filter(bank__name__exact=stmtrq.find('BANKACCTFROM/BANKID').text).
             assert account
             args['stmts'].append({'account' : account,
                                   'date_from' : stmtrq.find('INCTRAN/DTSTART').text })
@@ -134,5 +136,5 @@ def ofx_acctinfors(request, args):
         if accounts:
             args[account_type[0]] = accounts
 
-
+    print get_template('ofx/acctinfors.ofx').render(args)
     return render_to_response('ofx/acctinfors.ofx', args)

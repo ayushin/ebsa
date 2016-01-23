@@ -73,7 +73,7 @@ class ICSConnector(Connector):
 
                     # Do not import transactions without date
                     if tr_date == '':
-                        next
+                        continue
 
                     line = Transaction()
                     line.account = account
