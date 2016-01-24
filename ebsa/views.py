@@ -43,8 +43,13 @@ def account_statement(request, account_number, datefrom=None, dateto=None):
     else:
         statement = {}
 
+    saldo = 0
+    for t in transactions:
+        saldo += t.amount
+
     args = {'account_number' : account.number,
             'months': ('01', '02','03', '04', '05', '06', '07', '08', '09', '10', '11', '12'),
+            'saldo': saldo,
             'start_date' : transactions.first().date,
             'start_saldo' : account.bod_balance(transactions.first().date),
             'end_date' : transactions.last().date,
@@ -122,10 +127,10 @@ def ofx_stmtrs(request, template, args):
         st['availbal'] = {}
         st['ledgerbal']['date'] = st['availbal']['date'] = st['dtend'] = st['transactions'].last().date
         st['ledgerbal']['amount'] = st['availbal']['amount'] = st['account'].eod_balance(st['dtend'])
+    args['stmt'] = args['stmts'][0]
 
-
+    print args
     print get_template(template).render(args)
-    print "DATE FROM: %s " % date_from
 
     return render_to_response(template, args)
 

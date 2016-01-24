@@ -13,6 +13,7 @@
   {% if account_number %}
     <h2>Opening balanance: {{ start_saldo }}</h2>
     <h2>Closing balanance: {{ end_saldo }}</h2>
+    <h2>Saldo: {{ saldo }}</h2>
     {% for month in months %}
       <a href="/statement/{{ account_number }}/2015-{{month}}-01/2015-{{month}}-31">{{month}}</a>
     {% endfor %}

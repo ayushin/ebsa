@@ -1,0 +1,8 @@
+<SONRS>
+	<STATUS>
+		<CODE>0</CODE>
+		<SEVERITY>INFO</SEVERITY>
+	</STATUS>
+	<DTSERVER>{{ dtserver }}</DTSERVER>
+	<LANGUAGE>{{ language }}</LANGUAGE>
+</SONRS>

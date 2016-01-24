@@ -1,0 +1,69 @@
+{% extends 'ofx/response.ofx' %}
+{% block response %}
+<SIGNUPMSGSRSV1>
+<ACCTINFOTRNRS>
+  <TRNUID>{{ trnuid }}</TRNUID>
+  <STATUS>
+    <CODE>0</CODE>
+    <SEVERITY>INFO</SEVERITY>
+  </STATUS>
+  <ACCTINFORS>
+    <DTACCTUP>{{ dtacctup }}</DTACCTUP>
+    {% if current_accounts %}
+    {% for account in current_accounts %}
+    <ACCTINFO>
+       <DESC>{{ account.type }} / {{ account.number }} / {{ account.bank }}</DESC>
+       <BANKACCTINFO>
+         <BANKACCTFROM>
+           <BANKID>{{ account.bank }}</BANKID>
+           <ACCTID>{{ account.number }}</ACCTID>
+           <ACCTTYPE>CHECKING</ACCTTYPE>
+         </BANKACCTFROM>
+         <SUPTXDL>Y</SUPTXDL>
+         <XFERSRC>N</XFERSRC>
+         <XFERDEST>N</XFERDEST>
+         <SVCSTATUS>ACTIVE</SVCSTATUS>
+       </BANKACCTINFO>
+    </ACCTINFO>
+    {% endfor %}
+    {% endif %}
+    {% if savings_accounts %}
+    {% for account in savings_accounts %}
+    <ACCTINFO>
+       <DESC>{{ account.type }} / {{ account.number }} / {{ account.bank }}</DESC>
+       <BANKACCTINFO>
+         <BANKACCTFROM>
+           <BANKID>{{ account.bank }}</BANKID>
+           <ACCTID>{{ account.number }}</ACCTID>
+           <ACCTTYPE>SAVINGS</ACCTTYPE>
+         </BANKACCTFROM>
+         <SUPTXDL>Y</SUPTXDL>
+         <XFERSRC>N</XFERSRC>
+         <XFERDEST>N</XFERDEST>
+         <SVCSTATUS>ACTIVE</SVCSTATUS>
+       </BANKACCTINFO>
+    </ACCTINFO>
+    {% endfor %}
+    {% endif %}
+    {% if ccards %}
+    {% for ccard in ccards %}
+    <ACCTINFO>
+       <DESC>{{ ccard.number }} / {{ ccard.bank }}</DESC>
+       <CCACCTINFO>
+         <CCACCTFROM>
+           <BANKID>{{ ccard.bank }}</BANKID>
+           <ACCTID>{{ ccard.number }}</ACCTID>
+         </CCACCTFROM>
+         <SUPTXDL>Y</SUPTXDL>
+         <XFERSRC>Y</XFERSRC>
+         <XFERDEST>Y</XFERDEST>
+         <SVCSTATUS>ACTIVE</SVCSTATUS>
+       </CCACCTINFO>
+    </ACCTINFO>
+    {% endfor %}
+    {% endif %}
+  </ACCTINFORS>
+</ACCTINFOTRNRS>
+</SIGNUPMSGSRSV1>
+
+{% endblock %}

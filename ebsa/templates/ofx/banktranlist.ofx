@@ -1,0 +1,23 @@
+        <BANKTRANLIST>
+            <DTSTART>{{ stmt.dtstart | date:"Ymd"  }}</DTSTART>
+            <DTEND>{{ stmt.dtend | date:"Ymd" }}</DTEND>
+            {% for trn in stmt.transactions %}
+            <STMTTRN>
+                <TRNTYPE>{{ trn.get_trntype_display }}</TRNTYPE>
+                <DTPOSTED>{{ trn.date | date:"Ymd"}}</DTPOSTED>
+                <DTUSER>{{ trn.date_user | date:"Ymd"}}</DTUSER>
+                <TRNAMT>{{ trn.amount }}</TRNAMT>
+                <FITID>{{ trn.refnum }}</FITID>
+                <NAME>{{ trn.payee }}</NAME>
+                <MEMO>{{ trn.memo }}</MEMO>
+            </STMTTRN>
+            {% endfor %}
+        </BANKTRANLIST>
+        <LEDGERBAL>
+            <BALAMT>{{ stmt.ledgerbal.amount }}</BALAMT>
+            <DTASOF>{{ stmt.ledgerbal.date | date:"Ymd"}}</DTASOF>
+        </LEDGERBAL>
+        <AVAILBAL>
+            <BALAMT>{{ stmt.availbal.amount }}</BALAMT>
+            <DTASOF>{{ stmt.availbal.date| date:"Ymd" }}</DTASOF>
+        </AVAILBAL>

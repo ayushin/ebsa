@@ -1,0 +1,23 @@
+{% extends 'ofx/response.ofx' %}
+{% block response %}
+<BANKMSGSRSV1>
+<STMTTRNRS>
+    <TRNUID>{{ trnuid }}</TRNUID>
+    <STATUS>
+        <CODE>0</CODE>
+        <SEVERITY>INFO</SEVERITY>
+    </STATUS>
+    {% for stmt in stmts %}
+    <STMTRS>
+        <CURDEF>{{ stmt.account.currency }}</CURDEF>
+        <BANKACCTFROM>
+            <BANKID>{{ stmt.account.bank.name }}</BANKID>
+            <ACCTID>{{ stmt.account.number }}</ACCTID>
+            <ACCTTYPE>{{ stmt.account.get_type_display }}</ACCTTYPE>
+        </BANKACCTFROM>
+        {% include 'ofx/banktranlist.ofx' %}
+    </STMTRS>
+    {% endfor %}
+</STMTTRNRS>
+</BANKMSGSRSV1>
+{% endblock %}

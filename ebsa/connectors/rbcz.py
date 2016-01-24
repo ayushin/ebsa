@@ -138,9 +138,9 @@ class RaiffeisenCZConnector(Connector):
 
                 line.memo = smart_text(row['NOTE'])
                 if row['ACCOUNT NAME']:
-                    line.memo += smart_text('[' + row['ACCOUNT NAME'] + ']')
+                    line.memo += smart_text('[' + row['ACCOUNT NAME'] + '/' + row['ACCOUNT NUMBER'] +']')
 
-                line.payee = smart_text(row['ACCOUNT NUMBER'])
+                line.payee = smart_text(row['ACCOUNT NAME'] or row['ACCOUNT NUMBER'])
                 line.check_no = row['TRANSACTION CODE']
                 lineno += 1
                 line.refnum = line.generate_refnum()
@@ -161,6 +161,6 @@ class RaiffeisenCZConnector(Connector):
                     charge_line.amount = charges
                     charge_line.trntype = 'S'
                     charge_line.memo = 'Bank charges for transaction ' + line.check_no
-                    charge_line.payee = 'Raiffeisen Bank'
+                    charge_line.payee = 'Raiffeisen Bank CZ'
                     charge_line.refnum = charge_line.generate_refnum()
                     charge_line.save_safe()

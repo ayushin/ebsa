@@ -1,0 +1,7 @@
+{% include 'ofx/header.ofx' %}
+<OFX>
+<SIGNONMSGSRSV1>
+{% include 'ofx/sonrs.ofx' %}
+</SIGNONMSGSRSV1>
+{% block response %}{% endblock %}
+</OFX>

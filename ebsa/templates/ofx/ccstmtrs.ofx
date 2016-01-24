@@ -1,0 +1,21 @@
+{% extends 'ofx/response.ofx' %}
+{% block response %}
+<CREDITCARDMSGSRSV1>
+<CCSTMTTRNRS>
+    <TRNUID>{{ trnuid }}</TRNUID>
+    <STATUS>
+        <CODE>0</CODE>
+        <SEVERITY>INFO</SEVERITY>
+    </STATUS>
+    {% for stmt in stmts %}
+    <CCSTMTRS>
+        <CURDEF>{{ stmt.account.currency }}</CURDEF>
+        <CCACCTFROM>
+            <ACCTID>CC{{stmt.account.number }}</ACCTID>
+        </CCACCTFROM>
+        {% include 'ofx/banktranlist.ofx' %}
+    </CCSTMTRS>
+    {% endfor %}
+</CCSTMTTRNRS>
+</CREDITCARDMSGSRSV1>
+{% endblock %}
