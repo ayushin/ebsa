@@ -80,6 +80,12 @@ def ofx_connect(request):
         args['trnuid'] = ofx.find('SIGNUPMSGSRQV1/ACCTINFOTRNRQ/TRNUID').text
         return ofx_acctinfors(request, args)
 
+    # Is it a PROFRQ?
+    if ofx.find('PROFMSGSRQV1/PROFTRNRQ/PROFRQ'):
+        args['trnuid'] = ofx.find('PROFMSGSRQV1/PROFTRNRQ/TRNUID').text
+        print get_template('ofx/profrs.ofx').render(args)
+        return render_to_response('ofx/profrs.ofx', args)
+
     # Is it a STMTTRNRQ?
     leaf = ofx.find('BANKMSGSRQV1/STMTTRNRQ') or ofx.find('CREDITCARDMSGSRQV1/CCSTMTTRNRQ')
     if not leaf:
@@ -100,8 +106,11 @@ def ofx_connect(request):
                 # We used to check BANK ID too...
                 # filter(bank__name__exact=stmtrq.find('BANKACCTFROM/BANKID').text).
             assert account
-            args['stmts'].append({'account' : account,
-                                  'date_from' : stmtrq.find('INCTRAN/DTSTART').text })
+
+            if stmtrq.find('INCTRAN/DTSTART') != None:
+                args['stmts'].append({'account' : account, 'date_from' : stmtrq.find('INCTRAN/DTSTART').text })
+            else:
+                args['stmts'].append({'account' : account})
     else:
         ccstmtrqs = leaf.findall('CCSTMTRQ')
         assert ccstmtrqs
@@ -110,8 +119,11 @@ def ofx_connect(request):
             account = Account.objects.filter(number__exact=ccstmtrq.find('CCACCTFROM/ACCTID').text).\
                 filter(type__exact='C').distinct()[0]
             assert account
-            args['stmts'].append({'account' : account,
-                      'date_from' : ccstmtrq.find('INCTRAN/DTSTART').text })
+            if ccstmtrq.find('INCTRAN/DTSTART') != None:
+                args['stmts'].append({'account' : account, 'date_from' : ccstmtrq.find('INCTRAN/DTSTART').text })
+            else:
+                args['stmts'].append({'account' : account})
+
 
     return ofx_stmtrs(request, template, args)
 
@@ -119,8 +131,11 @@ def ofx_connect(request):
 
 def ofx_stmtrs(request, template, args):
     for st in args['stmts']:
-        date_from = st['date_from'][0:4] + '-' + st['date_from'][4:6] + '-' + st['date_from'][6:8]
-        st['transactions'] = Transaction.objects.filter(account=st['account']).filter(date__gte=date_from).order_by('date')
+        if st.get('date_from'):
+            date_from = st['date_from'][0:4] + '-' + st['date_from'][4:6] + '-' + st['date_from'][6:8]
+            st['transactions'] = Transaction.objects.filter(account=st['account']).filter(date__gte=date_from).order_by('date')
+        else:
+            st['transactions'] = Transaction.objects.filter(account=st['account']).order_by('date')
 
         st['dtstart'] = st['transactions'].first().date
         st['ledgerbal'] = {}

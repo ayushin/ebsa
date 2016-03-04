@@ -83,9 +83,9 @@ class YapiKrediTRConnector(Connector):
     #
     # If accounts = None create the accounts for this bank from the statement file
     #
-    def csvimport(self, filename, bank, accounts):
+    def csvimport(self, filename, accounts):
         # Check the header...
-        header=['Date', 'Transaction', 'Channel', 'Description', 'Transaction Amount', 'Balance', 'Receipt']
+        header=['', 'Date', 'Transaction', 'Channel', 'Description', 'Transaction Amount', 'Balance', 'Receipt']
 
         account = accounts[0]
 
@@ -102,6 +102,7 @@ class YapiKrediTRConnector(Connector):
                 if h[key] != key:
                     raise ValueError('CSV file doesnt seem to be in the correct format')
 
+            lastdate = None
             lineno = 1
             for row in reader:
                 # Skip investment transactions...
@@ -112,8 +113,11 @@ class YapiKrediTRConnector(Connector):
                 line = Transaction()
                 line.account = account
 
-                # Find the date...
+                # Find the date... We only increase check_no for each new date...
                 line.date = line.date_user = datetime.strptime(row['Date'],'%d/%m/%Y')
+                if lastdate != line.date:
+                    lineno = 1
+                    lastdate = line.date
 
                 # Determine the amount...
                 m = re.search('^(\-?)(\d*)\.?(\d*),(\d*) (TL|EUR)$', row['Transaction Amount'])

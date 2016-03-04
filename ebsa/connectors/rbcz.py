@@ -94,7 +94,7 @@ class RaiffeisenCZConnector(Connector):
     #
     # If accounts = None create the accounts for this bank from the statement file
     #
-    def csvimport(self, filename, bank, accounts):
+    def csvimport(self, filename, accounts):
         # Check the header...
         header=['DATE','TIME','NOTE','ACCOUNT NAME','ACCOUNT NUMBER',
                 'DATE DEDUCTED','VALUE','TYPE','TRANSACTION CODE','VARIABLE SYMBOL','CONSTANT SYMBOL',

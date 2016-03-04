@@ -2,7 +2,7 @@ from settings import *
 from os import unlink,rmdir,listdir,getcwd
 from tempfile import mkdtemp
 from django.db.utils import IntegrityError
-
+from datetime import timedelta, date
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
@@ -30,7 +30,7 @@ class Connector:
                 tmpdir = getcwd() + '/' + tmpdir
 
         self.download_dir = mkdtemp(dir=tmpdir)
-        print self.download_dir
+        print "Working directory: %s" % self.download_dir
 
         # Setup FireFox
         fp = webdriver.FirefoxProfile()
@@ -54,18 +54,25 @@ class Connector:
     def webimport(self, accounts, datefrom = None):
 
         # Log in...
+        print "Logging into '%s'..." % self.bank.name
         self.weblogin()
+
+        checking_accounts = []
 
         # Go through every account...
         for account in accounts:
             if not datefrom:
-                datefrom = account.latest_transaction().date
+                datefrom = date(account.latest_transaction().date + timedelta(days =1))
 
+            print "Downloading transactions from %s beginning from %s..." % (account.name, datefrom)
             if account.type == 'C':
                 self.webimport_creditcard(account, datefrom)
 
             if account.type == '0':
-                self.webimport_checking(account, datefrom)
+                checking_accounts.append(account)
+
+        if checking_accounts:
+            self.webimport_checking(checking_accounts, datefrom)
 
         # Log out...
         self.close_browser()

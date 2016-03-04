@@ -1,0 +1,11 @@
+       <MSGSETCORE>
+            <VER>1
+            <URL>http://127.0.0.1:9999/ofx
+            <OFXSEC>NONE
+            <TRANSPSEC>N
+            <SIGNONREALM>wwnet
+            <LANGUAGE>ENG
+            <SYNCMODE>FULL
+            <RESPFILEER>N
+            <SPNAME>wwnet
+       </MSGSETCORE>

@@ -1,0 +1,47 @@
+{% extends 'ofx/response.ofx' %}
+{% block response %}
+<PROFMSGSRSV1>
+  <PROFTRNRS>
+  <TRNUID>{{ trnuid }}
+  <STATUS>
+    <CODE>0
+    <SEVERITY>INFO
+  </STATUS>
+  <PROFRS>
+  <MSGSETLIST>
+    <SIGNONMSGSET><SIGNONMSGSETV1>
+        {% include 'ofx/msgsetcore.ofx' %}
+    </SIGNONMSGSETV1></SIGNONMSGSET>
+    <BANKMSGSET><BANKMSGSETV1>
+        {% include 'ofx/msgsetcore.ofx' %}
+        <CLOSINGAVAIL>Y
+    </BANKMSGSETV1></BANKMSGSET>
+    <CREDITCARDMSGSET><CREDITCARDMSGSETV1>
+        {% include 'ofx/msgsetcore.ofx' %}
+        <CLOSINGAVAIL>Y
+    </CREDITCARDMSGSETV1></CREDITCARDMSGSET>
+  </MSGSETLIST>
+  <SIGNONINFOLIST>
+    <SIGNONINFO>
+        <SIGNONREALM>wwnet
+        <MIN>2
+        <MAX>10
+        <CHARTYPE>ALPHAANDNUMERIC
+        <CASESEN>Y
+        <SPECIAL>Y
+        <SPACES>Y
+        <PINCH>N
+        <CHGPINFIRST>N
+    </SIGNONINFO>
+  </SIGNONINFOLIST>
+  <DTPROFUP>{{ dtserver }}
+  <FINAME>White Willow Bank Proxy
+  <ADDR1>Postbus 59797
+  <CITY>Amsterdam
+  <STATE>N-H
+  <POSTALCODE>1040LG
+  <COUNTRY>NL
+  </PROFRS>
+  </PROFTRNRS>
+</PROFMSGSRSV1>
+{% endblock %}

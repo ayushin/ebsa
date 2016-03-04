@@ -4,11 +4,13 @@ from ebsa.connector import Connector
 from ebsa.models import Bank, Account, Transaction
 
 from datetime import datetime, date, timedelta
+from time import sleep
 
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.keys import Keys
 
 import csv
+from os import unlink,rmdir,listdir,getcwd,path
 
 
 class IngNLConnector(Connector):
@@ -32,11 +34,12 @@ class IngNLConnector(Connector):
         assert "Mijn ING Overzicht - Mijn ING" in self.driver.title
 
 
-    def webimport_checking(self, account, datefrom):
-        # Download all accounts on the first call...
-        if not self.all_downloaded:
-            self.download_all_accounts(datefrom)
-            self.all_downloaded = True
+    def webimport_checking(self, accounts, datefrom):
+        self.csvfile = self.download_all_accounts(datefrom)
+        self.csvimport(self.csvfile, accounts=accounts)
+        unlink(self.csvfile)
+        # rmdir(self.download_dir)
+
 
     def webimport_creditcard(self, account, datefrom):
         # Download credit card statement
@@ -118,6 +121,13 @@ class IngNLConnector(Connector):
         elem = self.driver.find_element_by_xpath("//button[text()='Download']")
         elem.click()
 
+        # Do not return until the download is complete...
+        while True:
+            sleep(1)
+            files = listdir(self.download_dir)
+            if files:
+                if files[0][-4:] == '.csv':
+                    return path.join(self.download_dir, files[0])
 
 
     #
@@ -126,15 +136,17 @@ class IngNLConnector(Connector):
     #
     # If accounts = None create the accounts for this bank from the statement file
     #
-    def csvimport(self, filename, bank, accounts = []):
+    def csvimport(self, filename, accounts = None):
+        bank = self.bank
+
         # Check the header...
         header=['Datum', 'Naam / Omschrijving','Rekening',
                 'Tegenrekening','Code','Af Bij',
                 'Bedrag (EUR)','MutatieSoort','Mededelingen']
 
-        accounts_numbers = []
 
-        if len(accounts) > 0:
+        accounts_numbers = []
+        if accounts:
             for account in accounts:
                 accounts_numbers.append(account.number)
 
@@ -154,11 +166,11 @@ class IngNLConnector(Connector):
             for row in reader:
                 # Do we want to import this account?
                 if not row[2] in accounts_numbers:
-                    if len(accounts) > 0:
+                    if accounts:
                         print "Ignoring transaction for account number %s" % row[2]
                         continue
                     else:
-                        print 'Found account %s for bank %s' % (row[2], bank.name)
+                        print 'Found new account %s for bank %s' % (row[2], bank.name)
                         accounts_numbers.append(row[2])
 
                 # Get the account or stop here with an exception...
